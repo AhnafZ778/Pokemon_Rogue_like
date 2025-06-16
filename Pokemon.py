@@ -29,8 +29,7 @@ class Pokemon:
             elif i == "stats":
                 self.Stats.write(f"{self.Pokemon_info[i]}")
                 self.Stats.write("\n")
-    def retriever(self):
-        return move_retreiver(self.name)
+    
 
     
 # Pokemon_Name = input("Insert the name of your desired pokemon: \n")
