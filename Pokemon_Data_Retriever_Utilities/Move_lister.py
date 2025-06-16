@@ -1,3 +1,16 @@
+import requests
+
+def Get_Pokemon_info(name):
+    PokeUrl = "https://pokeapi.co/api/v2/"
+    PokeUrl += "pokemon/"
+    PokeUrl += f"{name}"
+    response = requests.get(PokeUrl)
+    if response.status_code == 200:
+        Pokemon_data = response.json()
+        return Pokemon_data
+    else:
+        print("Invalid Pokemon name")
+
 def move_retreiver(Pokemon, levels = 5):
     moves = {}
     starting_moveset = {}
