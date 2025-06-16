@@ -8,6 +8,10 @@ class Pokemon:
     def __init__(self, Name):
         self.name = Name
         self.Pokemon_info = Get_Pokemon_info(self.name)
+        self.moveset, self.moves = move_retreiver(self.name)
+        self.Ability, self.status = ability_list(self.Pokemon_info)
+        self.Stats = stat_lister(self.Pokemon_info)
+        self.Typing = type_lister(self.Pokemon_info)
     def separate(self):
         self.Abilities = open("Pokemon_data/Pokemon abilities.py", "a", encoding= "UTF-8")
         self.Types = open("Pokemon_data/Pokemon Types.py", "a", encoding= "UTF-8")
@@ -29,11 +33,7 @@ class Pokemon:
         return move_retreiver(self.name)
 
     
-Pokemon_Name = input("Insert the name of your desired pokemon: \n")
-if Get_Pokemon_info(Pokemon_Name):
-    Pokemon_Name = Pokemon(Pokemon_Name)
-moveset, moves = Pokemon_Name.retriever()
-Ability, status = ability_list(Pokemon_Name.Pokemon_info)
-Stats = stat_lister(Pokemon_Name.Pokemon_info)
-Typing = type_lister(Pokemon_Name.Pokemon_info)
-print(Ability, Stats, Typing)
+# Pokemon_Name = input("Insert the name of your desired pokemon: \n")
+# if Get_Pokemon_info(Pokemon_Name):
+#     Pokemon_Name = Pokemon(Pokemon_Name)
+# print(Ability, Stats, Typing)
