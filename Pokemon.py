@@ -29,7 +29,16 @@ class Pokemon:
             elif i == "stats":
                 self.Stats.write(f"{self.Pokemon_info[i]}")
                 self.Stats.write("\n")
-    
+    def level_up(self):
+        self.level += 1
+        self.level_up_exp = Growth_rate(self.name, self.level)
+        print(self.level)
+        print(self.level_storage[self.level])
+        if self.level_storage[self.level]:
+            for i in self.level_storage[self.level]:
+                print(f"Your Pokemon wants to learn {i}")
+                player_response =  input("Do you want to teach it?\n Y/N")
+                print(player_response)
 
     
 # Pokemon_Name = input("Insert the name of your desired pokemon: \n")
