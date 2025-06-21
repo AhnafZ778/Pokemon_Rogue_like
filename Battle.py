@@ -1,6 +1,7 @@
 import random
 from Utilities.isCritical import isCritical
-
+from Player import Player
+from Random_Entity_Generator.Trainer import Trainer
 class Battle:
     
     def __init__(self, Player_1, Player_2):
@@ -86,11 +87,12 @@ class Battle:
             D = self.Trainer_Curr.Stats["defense"]
             damage = (((2 * pokemon.level * Critical / 5 + 2) * Power * (A / D)) / 50) + 2
             damage = round(damage, 2)
-            self.Trainer_Curr.HP -= damage
-            self.Trainer_Curr.HP = round(self.Trainer_Curr.HP, 2)
-            print(f"It caused {damage} damage on {self.Trainer_Curr.name.capitalize()}")
-            if cri:
-                print("It's a Critical Hit!!")
+            if damage > 0:
+                self.Trainer_Curr.HP -= damage
+                self.Trainer_Curr.HP = round(self.Trainer_Curr.HP, 2)
+                print(f"It caused {damage} damage on {self.Trainer_Curr.name.capitalize()}")
+                if cri:
+                    print("It's a Critical Hit!!")
             if self.Trainer_Curr.HP <= 0:
                 print(f"{self.Trainer_Curr.name.capitalize()} has fainted.")
                 dead = self.Trainer_Curr
@@ -103,7 +105,33 @@ class Battle:
             else:
                 print(f"{self.Trainer_Curr.name.capitalize()} has {self.Trainer_Curr.HP} HP remaining")
         else:
-            print("Non - Damaging Move")
+            print("OK")
+            if (pokemon.moveset[res_move]["Status_changes"]):
+                print("OK^2")
+                for i,j in pokemon.moveset[res_move]["Status_changes"].items():
+                    print(i)
+                    if i == "attack":
+                        if j > 0:
+                            print(self.Player_Curr.Stats["attack"])
+                            self.Player_Curr.Stats["attack"] += self.Player_Curr.Stats["attack"]*(0.5 * j)
+                            print(self.Player_Curr.Stats["attack"])
+                        else:
+                            print(self.Trainer_Curr.Stats["attack"])
+                            self.Trainer_Curr.Stats["attack"] += self.Trainer_Curr.Stats["attack"]*(0.5 * j)
+                            print(self.Trainer_Curr.Stats["attack"])
+                    elif i == "defense":
+                        if j > 0:
+                            print(self.Player_Curr.Stats["defense"])
+                            self.Player_Curr.Stats["defense"] += self.Player_Curr.Stats["defense"]*(0.5 * j)
+                            print(self.Player_Curr.Stats["defense"])
+                        else:
+                            print(self.Trainer_Curr.Stats["defense"])
+                            self.Trainer_Curr.Stats["defense"] += self.Trainer_Curr.Stats["defense"]*(0.5 * j)
+                            print(self.Trainer_Curr.Stats["defense"])
+                    # elif i == "accuracy":
+                        
+                    
+            
             
         # print((res_move.keys()))
         
