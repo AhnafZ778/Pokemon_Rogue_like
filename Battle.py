@@ -128,7 +128,13 @@ class Battle:
                             print(self.Trainer_Curr.Stats["defense"])
                             self.Trainer_Curr.Stats["defense"] += self.Trainer_Curr.Stats["defense"]*(0.5 * j)
                             print(self.Trainer_Curr.Stats["defense"])
-                    # elif i == "accuracy":
+                    elif i in self.statuses:
+                    if not self.Trainer_Curr.Status_condition:
+                        rng = random.randint(1, 100)
+                        if rng <= j:
+                            self.Trainer_Curr.Status_condition = Status_effect(i)
+                    else:
+                        print("Bro already disabled bruh chill")
                         
                     
             
