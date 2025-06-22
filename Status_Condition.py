@@ -26,3 +26,13 @@ def Status_condition_effect(Pokemon):
         damage = (1/16)*(Pokemon.Stats["hp"])
         Pokemon.HP -= damage
         print(f"{Pokemon.name} took {damage} damage from Burn")
+
+    elif Pokemon.Status_condition == "Sleep":
+        dice = random.randint(1, 100)
+        if dice <= 45:
+            print("Wake up you fucking sloth")
+            return True
+        else:
+            print("Congrats you're no longer useless")
+            Pokemon.Status_condition = None
+            return False
