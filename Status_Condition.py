@@ -9,3 +9,7 @@ def Status_condition_effect(Pokemon):
         else:
             return False
     
+    elif Pokemon.Status_condition == "Poisoned":
+        damage = (1/8)*(Pokemon.Stats["hp"])
+        Pokemon.HP -= damage
+        print(f"{Pokemon.name} took {damage} damage from Poison")
