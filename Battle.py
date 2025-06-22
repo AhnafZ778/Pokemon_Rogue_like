@@ -1,9 +1,9 @@
 import random
 from Utilities.isCritical import isCritical
 from Player import Player
-from Random_Entity_Generator.Trainer import Trainer
+from Entity_Generators.Trainer import Trainer
 from item_effects import effect
-from Utilities.Status_effect import Status_effect
+from Pokemon_Data_Retriever_Utilities.Status_effect import Status_effect
 class Battle:
 
 class Battle:
