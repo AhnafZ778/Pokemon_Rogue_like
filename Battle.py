@@ -14,6 +14,7 @@ class Battle:
         self.Player_Curr = self.Player.Alive_Pokemons.pop(0)
         print(type(self.Player_Curr))
         self.Trainer_Curr = self.Trainer.Alive_Pokemons.pop(0)
+        self.statuses = ("paralysis", "freeze", "burn", "poison")
 
     def check_match(self):
         if not self.Player.Alive_Pokemons and self.Player_Curr.HP <= 0:
