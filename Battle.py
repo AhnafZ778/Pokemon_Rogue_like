@@ -168,43 +168,49 @@ class Battle:
     
     
     def Trainer_turn(self):
-        if 0 < self.Trainer_Curr.HP < self.Trainer_Curr.HP * 0.2:
-            self.Trainer.items["potions"] -= 1
-            print(f"{self.Trainer.name.capitalize()} used Potion on {self.Trainer_Curr.name.capitalize()}")
-        else:
-            damage = []
-            for i in self.Trainer_Curr.moveset:
-                if self.Trainer_Curr.moveset[i]["Power"]:
-                    damage.append(i)
-            if damage:
-                choice = random.randint(0, len(damage)-1)
-                print(f"{self.Trainer_Curr.name.capitalize()} used {damage[choice]}")
-                Power = self.Trainer_Curr.moveset[damage[choice]]["Power"]
-                crit = isCritical()
-                cri = False
-                Critical = 1
-                if crit:
-                    Critical = 1.5
-                    cri = True
-                A = self.Trainer_Curr.Stats["attack"]
-                D = self.Player_Curr.Stats["defense"]
-                damage = (((2 * self.Trainer_Curr.level * Critical / 5 + 2) * Power * (A / D)) / 50) + 2
-                damage = round(damage, 2)
-                self.Player_Curr.HP -= damage
-                self.Player_Curr.HP = round(self.Player_Curr.HP, 2)
-                print(f"It caused {damage} damage on {self.Player_Curr.name.capitalize()}")
-                print(f"{self.Player_Curr.name.capitalize()} has {self.Player_Curr.HP} HP remaining")
-                if cri:
-                    print("It's a Critical Hit!!")
-                if self.Player_Curr.HP <= 0:
-                    print(f"Your {self.Player_Curr.name} has fainted.")
-                    dead = self.Player_Curr
-                    self.Player.Dead_Pokemons.append(dead)
-                    # print(self.Player.Dead_Pokemons)
-                    check = self.check_match()
-                    if check:
-                        return True
-                    else:
-                        self.Switch_Pokemons(self.Player)
+        condition = True
+        if self.Trainer_Curr.Status_condition == "Paralyzed" or self.Trainer_Curr.Status_condition == "Frozen" or self.Trainer_Curr.Status_condition == "Sleep":
+            condition = Status_condition_effect(self.Player_Curr)
+        if condition:
+            if 0 < self.Trainer_Curr.HP < self.Trainer_Curr.HP * 0.2:
+                self.Trainer.items["potions"] -= 1
+                print(f"{self.Trainer.name.capitalize()} used Potion on {self.Trainer_Curr.name.capitalize()}")
             else:
-                print("No damaging Moves, lol betacuck")
+                damage = []
+                for i in self.Trainer_Curr.moveset:
+                    if self.Trainer_Curr.moveset[i]["Power"]:
+                        damage.append(i)
+                if damage:
+                    choice = random.randint(0, len(damage)-1)
+                    print(f"{self.Trainer_Curr.name.capitalize()} used {damage[choice]}")
+                    Power = self.Trainer_Curr.moveset[damage[choice]]["Power"]
+                    crit = isCritical()
+                    cri = False
+                    Critical = 1
+                    if crit:
+                        Critical = 1.5
+                        cri = True
+                    A = self.Trainer_Curr.Stats["attack"]
+                    D = self.Player_Curr.Stats["defense"]
+                    damage = (((2 * self.Trainer_Curr.level * Critical / 5 + 2) * Power * (A / D)) / 50) + 2
+                    damage = round(damage, 2)
+                    self.Player_Curr.HP -= damage
+                    self.Player_Curr.HP = round(self.Player_Curr.HP, 2)
+                    print(f"It caused {damage} damage on {self.Player_Curr.name.capitalize()}")
+                    print(f"{self.Player_Curr.name.capitalize()} has {self.Player_Curr.HP} HP remaining")
+                    if cri:
+                        print("It's a Critical Hit!!")
+                    if self.Player_Curr.HP <= 0:
+                        print(f"Your {self.Player_Curr.name} has fainted.")
+                        dead = self.Player_Curr
+                        self.Player.Dead_Pokemons.append(dead)
+                        # print(self.Player.Dead_Pokemons)
+                        check = self.check_match()
+                        if check:
+                            return True
+                        else:
+                            self.Switch_Pokemons(self.Player)
+                else:
+                    print("No damaging Moves, lol betacuck")
+            if self.Trainer_Curr.Status_condition == "Poisoned" or self.Trainer_Curr.Status_condition == "Burned":
+            Status_condition_effect(self.Trainer_Curr)
