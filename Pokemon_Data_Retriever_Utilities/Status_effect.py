@@ -1,4 +1,4 @@
-def Status_effect(effect):
+def Status_effect(effect): 
     if effect == "paralysis":
         print("Congrats you're practically Stephen Hawkins now")
         return "Paralyzed"
