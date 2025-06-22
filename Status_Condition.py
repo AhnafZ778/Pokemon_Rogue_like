@@ -13,3 +13,12 @@ def Status_condition_effect(Pokemon):
         damage = (1/8)*(Pokemon.Stats["hp"])
         Pokemon.HP -= damage
         print(f"{Pokemon.name} took {damage} damage from Poison")
+    elif Pokemon.Status_condition == "Frozen":
+        dice = random.randint(1, 100)
+        if dice <= 45:
+            print("You're Still frozen my guy")
+            return True
+        else:
+            print("Congrats you made elsa your bitch")
+            Pokemon.Status_condition = None
+            return False
