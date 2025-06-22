@@ -22,3 +22,7 @@ def Status_condition_effect(Pokemon):
             print("Congrats you made elsa your bitch")
             Pokemon.Status_condition = None
             return False
+    elif Pokemon.Status_condition == "Burned":
+        damage = (1/16)*(Pokemon.Stats["hp"])
+        Pokemon.HP -= damage
+        print(f"{Pokemon.name} took {damage} damage from Burn")
