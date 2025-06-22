@@ -147,17 +147,23 @@ class Battle:
         # print((res_move.keys()))
         
     def Player_turn(self):
-        print("What would you like to do?")
-        print("1. Attack 2. Switch Pokemons 3. Use Items")
-        response = int(input(""))
-        match = None
-        if response == 1:
-            match = self.Attack(self.Player_Curr)
-        elif response == 2:
-            self.Switch_Pokemons(self.Player)
-        elif response == 3:
-            self.Use_item(self.Player_Curr, self.Player)
-        return match
+        condition = True
+        if self.Player_Curr.Status_condition == "Paralyzed" or self.Player_Curr.Status_condition == "Frozen" or self.Player_Curr.Status_condition == "Sleep":
+            condition = Status_condition_effect(self.Player_Curr)
+        if condition:
+            print("What would you like to do?")
+            print("1. Attack 2. Switch Pokemons 3. Use Items")
+            response = int(input(""))
+            match = None
+            if response == 1:
+                match = self.Attack(self.Player_Curr)
+            elif response == 2:
+                self.Switch_Pokemons(self.Player)
+            elif response == 3:
+                self.Use_item(self.Player_Curr, self.Player)
+            return match
+        if self.Player_Curr.Status_condition == "Poisoned" or self.Player_Curr.Status_condition == "Burned":
+            Status_condition_effect(self.Player_Curr)
     
     
     
