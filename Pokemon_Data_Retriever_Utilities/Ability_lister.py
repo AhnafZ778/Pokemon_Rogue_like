@@ -1,6 +1,6 @@
 import re 
 
-def ability_list(data):
+def ability_list(data): 
     abilities = data["abilities"]
     Ability_name = (abilities[0]["ability"]["name"])
     Ability_url = (abilities[0]["ability"]["url"])
