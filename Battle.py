@@ -5,7 +5,7 @@ from Entity_Generators.Trainer import Trainer
 from item_effects import effect
 from Pokemon_Data_Retriever_Utilities.Status_effect import Status_effect
 class Battle:
-
+ 
 class Battle:
     
     def __init__(self, Player_1, Player_2):
