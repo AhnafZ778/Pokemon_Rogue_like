@@ -110,11 +110,8 @@ class Battle:
             else:
                 print(f"{self.Trainer_Curr.name.capitalize()} has {self.Trainer_Curr.HP} HP remaining")
         else:
-            print("OK")
             if (pokemon.moveset[res_move]["Status_changes"]):
-                print("OK^2")
                 for i,j in pokemon.moveset[res_move]["Status_changes"].items():
-                    print(i)
                     if i == "attack":
                         if j > 0:
                             print(self.Player_Curr.Stats["attack"])
@@ -138,8 +135,7 @@ class Battle:
                         rng = random.randint(1, 100)
                         if rng <= j:
                             self.Trainer_Curr.Status_condition = Status_effect(i)
-                    else:
-                        print("Bro already disabled bruh chill")
+        
                         
                     
             
