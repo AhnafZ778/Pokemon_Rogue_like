@@ -1,5 +1,7 @@
 def Status_effect(effect, Pokemon = None):
-    if effect == "paralysis":
+    if Pokemon.Status_condition:
+        print("Bro is already disable dude chill")
+    elif effect == "paralysis":
         print("Congrats you're practically Stephen Hawkins now")
         return "Paralyzed"
     elif effect == "burn":
