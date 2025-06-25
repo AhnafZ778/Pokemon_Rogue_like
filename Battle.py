@@ -63,6 +63,7 @@ class Battle:
             print(f"{i+1}. {avail[i]}: {player.items[avail[i]]}", end = " ")
         res = input("\n")
         response = int(res) - 1
+        effect(pokemon, avail[response], player)
         player.items[avail[response]] -= 1
         
     def Attack(self, pokemon):
