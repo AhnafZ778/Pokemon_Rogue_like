@@ -72,9 +72,6 @@ class Battle:
             player.items[item] -= 1
         
     def Attack(self, pokemon):
-        # print(pokemon.name)
-        # print(pokemon.moveset)
-        # print(pokemon.moves)
         print("What Move would you like to use?")
         count = 1
         for i,j in pokemon.moveset.items():
@@ -84,46 +81,69 @@ class Battle:
         moves = list(pokemon.moveset.keys())
         res_move = moves[response-1]
         print(f"{pokemon.name.capitalize()} Used {res_move} on {self.Trainer.name.capitalize()}'s {self.Trainer_Curr.name.capitalize()}")
-        # print(pokemon.moveset[res_move]["Power"])
         Power = pokemon.moveset[res_move]["Power"]
-        if Power:
-            crit = isCritical()
-            cri = False
-            if crit:
-                Critical = 1.5
-                cri = True
-            else:
-                Critical = 1
-            A = pokemon.Stats["attack"]
-            D = self.Trainer_Curr.Stats["defense"]
-            damage = (((2 * pokemon.level * Critical / 5 + 2) * Power * (A / D)) / 50) + 2
-            damage = round(damage, 2)
-            if damage > 0:
-                self.Trainer_Curr.HP -= damage
-                self.Trainer_Curr.HP = round(self.Trainer_Curr.HP, 2)
-                print(f"It caused {damage} damage on {self.Trainer_Curr.name.capitalize()}")
-                if cri:
-                    print("It's a Critical Hit!!")
-            if self.Trainer_Curr.HP <= 0:
-                print(f"{self.Trainer_Curr.name.capitalize()} has fainted.")
-                dead = self.Trainer_Curr
-                self.Trainer_Curr.life = "Dead"
-                self.Trainer.Dead_Pokemons.append(dead)
-                res = self.check_match()
-                if res:
-                    return True
-                else:
-                    self.Switch_Pokemons(self.Trainer)
-                    print("Do you want to switch Pokemons?")
-                    switch_ask = int(input("1.Yes 2.No\n"))
-                    if switch_ask == 1:
-                        self.Switch_Pokemons(self.Player)
-                    return "Switch"
-            else:
-                print(f"{self.Trainer_Curr.name.capitalize()} has {self.Trainer_Curr.HP} HP remaining")
+        matchup = asyncio.run(Matchup(pokemon.moveset[res_move]["Type_URL"]))
+        multiplier = 1
+        has_mul_1 = None
+        has_mul_2 = None
+        for i,j in matchup.items():
+            if self.Trainer_Curr.Type_1 in j:
+                has_mul_1 = i
+            if self.Trainer_Curr.Type_2 in j:
+                has_mul_2 = i
+            
+        has_mul_1 = self.convert_multipliers(has_mul_1)
+        if self.Trainer_Curr.Type_2:
+            has_mul_2 = self.convert_multipliers(has_mul_2)
         else:
+            has_mul_2 = 1
+        
+        multiplier *= has_mul_1 * has_mul_2        
+        if multiplier > 1:
+            print("It's Super Effective!")
+        if 0 < multiplier < 1:
+            print("It's not Very Effective")
+        
+        if multiplier != 0:
+            if Power:
+                crit = isCritical()
+                cri = False
+                if crit:
+                    Critical = 1.5
+                    cri = True
+                else:
+                    Critical = 1
+                A = pokemon.Stats["attack"]
+                D = self.Trainer_Curr.Stats["defense"]
+                damage = (((2 * pokemon.level * Critical / 5 + 2) * Power * (A / D)) / 50) + 2
+                damage *= multiplier
+                damage = round(damage, 2)
+                if damage > 0:
+                    self.Trainer_Curr.HP -= damage
+                    self.Trainer_Curr.HP = round(self.Trainer_Curr.HP, 2)
+                    print(f"It caused {damage} damage on {self.Trainer_Curr.name.capitalize()}")
+                    if cri:
+                        print("It's a Critical Hit!!")
+                if self.Trainer_Curr.HP <= 0:
+                    print(f"{self.Trainer_Curr.name.capitalize()} has fainted.")
+                    dead = self.Trainer_Curr
+                    self.Trainer_Curr.life = "Dead"
+                    self.Trainer.Dead_Pokemons.append(dead)
+                    res = self.check_match()
+                    if res:
+                        return True
+                    else:
+                        self.Switch_Pokemons(self.Trainer)
+                        print("Do you want to switch Pokemons?")
+                        switch_ask = int(input("1.Yes 2.No\n"))
+                        if switch_ask == 1:
+                            self.Switch_Pokemons(self.Player)
+                        return "Switch"
+                else:
+                    print(f"{self.Trainer_Curr.name.capitalize()} has {self.Trainer_Curr.HP} HP remaining")
             if (pokemon.moveset[res_move]["Status_changes"]):
                 for i,j in pokemon.moveset[res_move]["Status_changes"].items():
+                    # print(i, j)
                     if i == "attack":
                         if j > 0:
                             print(self.Player_Curr.Stats["attack"])
@@ -143,11 +163,13 @@ class Battle:
                             self.Trainer_Curr.Stats["defense"] += self.Trainer_Curr.Stats["defense"]*(0.5 * j)
                             print(self.Trainer_Curr.Stats["defense"])
                     elif i in self.statuses:
-                    if not self.Trainer_Curr.Status_condition:
-                        rng = random.randint(1, 100)
-                        if rng <= j:
-                            self.Trainer_Curr.Status_condition = Status_effect(i)
-        
+                        if not self.Trainer_Curr.Status_condition:
+                            rng = random.randint(1, 100)
+                            # print(rng, j)
+                            if rng <= j or j == 0:
+                                self.Trainer_Curr.Status_condition = Status_effect(i, pokemon)
+        else:
+            print(f"{self.Trainer_Curr.name.capitalize()} is immune to {res_move}") 
                         
                     
             
