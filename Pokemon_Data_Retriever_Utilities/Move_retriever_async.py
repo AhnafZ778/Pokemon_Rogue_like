@@ -23,6 +23,29 @@ def move_get(session, info):
         URL = (info["moves"][i]["move"]["url"])
         moves.append(session.get(URL, ssl=False))
     return moves
+
+async def Matchup(URL):
+    matchup = defaultdict(set)
+    async with aiohttp.ClientSession() as session:
+        # start = time.time()
+        response = await session.get(URL, ssl=False)
+        type_rets = await response.json()
+        for i in type_rets["damage_relations"]["double_damage_to"]:
+            matchup["double_damage"].add(i["name"])
+        # first = time.time()
+        # print("First",first- start)
+        for i in type_rets["damage_relations"]["half_damage_to"]:
+            matchup["half_damage"].add(i["name"])
+        # second = time.time()
+        # print("Second Loop", second - start)
+        for i in type_rets["damage_relations"]["no_damage_to"]:
+            matchup["no_damage"].add(i["name"])
+        # # last = time.time()
+        # print("Last", last - start)
+        # print(matchup["half_damage"])
+    return matchup
+
+
 async def move_retreiver(name, levels = 5):
     moves_ret = {}
     starting_moveset = {}
