@@ -180,9 +180,19 @@ class Battle:
         if self.Trainer_Curr.Status_condition == "Paralyzed" or self.Trainer_Curr.Status_condition == "Frozen" or self.Trainer_Curr.Status_condition == "Sleep":
             condition = Status_condition_effect(self.Player_Curr)
         if condition:
-            if 0 < self.Trainer_Curr.HP < self.Trainer_Curr.HP * 0.2:
-                self.Trainer.items["potions"] -= 1
+            if 0 < self.Trainer_Curr.HP < self.Trainer_Curr.HP * 0.2 and self.Trainer.items["potion"] > 0:
+                self.Trainer.items["potion"] -= 1
                 print(f"{self.Trainer.name.capitalize()} used Potion on {self.Trainer_Curr.name.capitalize()}")
+            elif self.Trainer_Curr.Status_condition == "Paralyzed" and self.Trainer.items["paralyze_heal"] > 0:
+                self.Use_item(self.Trainer_Curr, self.Trainer, "paralyze_heal")
+            elif self.Trainer_Curr.Status_condition == "Frozen" and self.Trainer.items["freeze_heal"] > 0:
+                self.Use_item(self.Trainer_Curr, self.Trainer, "freeze_heal")
+            elif self.Trainer_Curr.Status_condition == "Burned" and self.Trainer.items["burn_heal"] > 0:
+                self.Use_item(self.Trainer_Curr, self.Trainer, "burn_heal")
+            elif self.Trainer_Curr.Status_condition == "Sleep" and self.Trainer.items["awakening"] > 0:
+                self.Use_item(self.Trainer_Curr, self.Trainer, "awakening")
+            elif self.Trainer_Curr.Status_condition == "Poisoned" and self.Trainer.items["antidote"] > 0:
+                self.Use_item(self.Trainer_Curr, self.Trainer, "antidote")
             else:
                 damage = []
                 for i in self.Trainer_Curr.moveset:
@@ -221,4 +231,4 @@ class Battle:
                 else:
                     print("No damaging Moves, lol betacuck")
             if self.Trainer_Curr.Status_condition == "Poisoned" or self.Trainer_Curr.Status_condition == "Burned":
-            Status_condition_effect(self.Trainer_Curr)
+             Status_condition_effect(self.Trainer_Curr)
