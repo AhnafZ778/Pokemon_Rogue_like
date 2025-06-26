@@ -107,12 +107,18 @@ class Battle:
             if self.Trainer_Curr.HP <= 0:
                 print(f"{self.Trainer_Curr.name.capitalize()} has fainted.")
                 dead = self.Trainer_Curr
+                self.Trainer_Curr.life = "Dead"
                 self.Trainer.Dead_Pokemons.append(dead)
                 res = self.check_match()
                 if res:
                     return True
                 else:
                     self.Switch_Pokemons(self.Trainer)
+                    print("Do you want to switch Pokemons?")
+                    switch_ask = int(input("1.Yes 2.No\n"))
+                    if switch_ask == 1:
+                        self.Switch_Pokemons(self.Player)
+                    return "Switch"
             else:
                 print(f"{self.Trainer_Curr.name.capitalize()} has {self.Trainer_Curr.HP} HP remaining")
         else:
