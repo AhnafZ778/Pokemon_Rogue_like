@@ -49,22 +49,27 @@ class Battle:
             poke_choice = random.randint(0, len(self.Trainer.Alive_Pokemons)-1)
             if self.Trainer_Curr not in self.Trainer.Dead_Pokemons:
                 Player.Alive_Pokemons.append(self.Trainer_Curr)
+            poke_choice -= 1
             self.Trainer_Curr = Player.Alive_Pokemons.pop([poke_choice-1])
             print(f"{self.Trainer.name} sent out {self.Trainer_Curr.name.capitalize()}")
             
                 
-    def Use_item(self, pokemon, player):
-        print(f"Which Item would you like to use on {pokemon.name.capitalize()}")
-        avail = []
-        for i,j in player.items.items():
-            if j != 0:
-                avail.append(i)
-        for i in range(len(avail)):
-            print(f"{i+1}. {avail[i]}: {player.items[avail[i]]}", end = " ")
-        res = input("\n")
-        response = int(res) - 1
-        effect(pokemon, avail[response], player)
-        player.items[avail[response]] -= 1
+    def Use_item(self, pokemon, player, item = None):
+        if not item:
+            print(f"Which Item would you like to use on {pokemon.name.capitalize()}")
+            avail = []
+            for i,j in player.items.items():
+                if j != 0:
+                    avail.append(i)
+            for i in range(len(avail)):
+                print(f"{i+1}. {avail[i]}: {player.items[avail[i]]}", end = " ")
+            res = input("\n")
+            response = int(res) - 1
+            effect(pokemon, avail[response], player)
+            player.items[avail[response]] -= 1
+        else:
+            effect(pokemon, item, player)
+            player.items[item] -= 1
         
     def Attack(self, pokemon):
         # print(pokemon.name)
