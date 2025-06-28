@@ -118,29 +118,49 @@ class Battle:
                 damage = (((2 * pokemon.level * Critical / 5 + 2) * Power * (A / D)) / 50) + 2
                 damage *= multiplier
                 damage = round(damage, 2)
-                if damage > 0:
-                    self.Trainer_Curr.HP -= damage
-                    self.Trainer_Curr.HP = round(self.Trainer_Curr.HP, 2)
-                    print(f"It caused {damage} damage on {self.Trainer_Curr.name.capitalize()}")
-                    if cri:
-                        print("It's a Critical Hit!!")
-                if self.Trainer_Curr.HP <= 0:
-                    print(f"{self.Trainer_Curr.name.capitalize()} has fainted.")
-                    dead = self.Trainer_Curr
-                    self.Trainer_Curr.life = "Dead"
-                    self.Trainer.Dead_Pokemons.append(dead)
-                    res = self.check_match()
-                    if res:
-                        return True
-                    else:
-                        self.Switch_Pokemons(self.Trainer)
-                        print("Do you want to switch Pokemons?")
-                        switch_ask = int(input("1.Yes 2.No\n"))
-                        if switch_ask == 1:
+                if pokemon.Status_condition == "Confused":
+                    Status_condition_effect(pokemon)
+                    if pokemon.confused == "Yes":
+                        pokemon.HP -= damage
+                    if pokemon.HP <= 0:
+                        print(f"Your {pokemon.name} has fainted.")
+                        pokemon.life = "Dead"
+                        dead = pokemon
+                        self.Player.Dead_Pokemons.append(dead)
+                        check = self.check_match()
+                        if check:
+                            return True
+                        else:
                             self.Switch_Pokemons(self.Player)
-                        return "Switch"
                 else:
-                    print(f"{self.Trainer_Curr.name.capitalize()} has {self.Trainer_Curr.HP} HP remaining")
+                    if damage > 0:
+                        self.Trainer_Curr.HP -= damage
+                        self.Trainer_Curr.HP = round(self.Trainer_Curr.HP, 2)
+                        print(f"It caused {damage} damage on {self.Trainer_Curr.name.capitalize()}")
+                        if cri:
+                            print("It's a Critical Hit!!")
+                        if pokemon.moveset[res_move]["Life_drain"]:
+                            print(f"It healed {pokemon.name} for {damage/2}")
+                            pokemon.HP += (damage/2)
+                            if pokemon.HP > pokemon.Stats["hp"]:
+                                pokemon.HP = pokemon.Stats["hp"]
+                    if self.Trainer_Curr.HP <= 0:
+                        print(f"{self.Trainer_Curr.name.capitalize()} has fainted.")
+                        dead = self.Trainer_Curr
+                        self.Trainer_Curr.life = "Dead"
+                        self.Trainer.Dead_Pokemons.append(dead)
+                        res = self.check_match()
+                        if res:
+                            return True
+                        else:
+                            self.Switch_Pokemons(self.Trainer)
+                            print("Do you want to switch Pokemons?")
+                            switch_ask = int(input("1.Yes 2.No\n"))
+                            if switch_ask == 1:
+                                self.Switch_Pokemons(self.Player)
+                            return "Switch"
+                    else:
+                        print(f"{self.Trainer_Curr.name.capitalize()} has {self.Trainer_Curr.HP} HP remaining")
             if (pokemon.moveset[res_move]["Status_changes"]):
                 for i,j in pokemon.moveset[res_move]["Status_changes"].items():
                     # print(i, j)
