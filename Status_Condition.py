@@ -1,5 +1,5 @@
 import random
-
+Confusion_count = 0
 def Status_condition_effect(Pokemon):
     if Pokemon.Status_condition == "Paralyzed":
         dice = random.randint(1, 100)
