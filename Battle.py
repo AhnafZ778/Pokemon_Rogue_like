@@ -236,14 +236,13 @@ class Battle:
             elif self.Trainer_Curr.Status_condition == "Poisoned" and self.Trainer.items["antidote"] > 0:
                 self.Use_item(self.Trainer_Curr, self.Trainer, "antidote")
             else:
-                damage = []
+                power = []
                 for i in self.Trainer_Curr.moveset:
                     if self.Trainer_Curr.moveset[i]["Power"]:
-                        damage.append(i)
-                if damage:
-                    choice = random.randint(0, len(damage)-1)
-                    print(f"{self.Trainer_Curr.name.capitalize()} used {damage[choice]}")
-                    matchup = asyncio.run(Matchup(self.Trainer_Curr.moveset[damage[choice]]["Type_URL"]))
+                        power.append(i)
+                if power:
+                    choice = random.randint(0, len(power)-1)
+                    matchup = asyncio.run(Matchup(self.Trainer_Curr.moveset[power[choice]]["Type_URL"]))
                     multiplier = 1
                     has_mul_1 = None
                     has_mul_2 = None
@@ -266,7 +265,7 @@ class Battle:
                         print("It's not Very Effective")
                     
                     if multiplier != 0:
-                        Power = self.Trainer_Curr.moveset[damage[choice]]["Power"]
+                        Power = self.Trainer_Curr.moveset[power[choice]]["Power"]
                         crit = isCritical()
                         cri = False
                         Critical = 1
@@ -277,24 +276,46 @@ class Battle:
                         D = self.Player_Curr.Stats["defense"]
                         damage = (((2 * self.Trainer_Curr.level * Critical / 5 + 2) * Power * (A / D)) / 50) + 2
                         damage = round(damage, 2)
-                        self.Player_Curr.HP -= damage
-                        self.Player_Curr.HP = round(self.Player_Curr.HP, 2)
-                        print(f"It caused {damage} damage on {self.Player_Curr.name.capitalize()}")
-                        print(f"{self.Player_Curr.name.capitalize()} has {self.Player_Curr.HP} HP remaining")
-                        if cri:
-                            print("It's a Critical Hit!!")
-                        if self.Player_Curr.HP <= 0:
-                            print(f"Your {self.Player_Curr.name} has fainted.")
-                            self.Player_Curr.life = "Dead"
-                            dead = self.Player_Curr
-                            self.Player.Dead_Pokemons.append(dead)
-                            check = self.check_match()
-                            if check:
-                                return True
-                            else:
-                                self.Switch_Pokemons(self.Player)
+                        if self.Trainer_Curr.Status_condition == "Confused":
+                            Status_condition_effect(self.Trainer_Curr)
+                        print(f"{self.Trainer_Curr.name.capitalize()} used {power[choice]}")
+                        if self.Trainer_Curr.confused == "Yes":
+                                self.Trainer_Curr.HP -= damage
+                                if self.Trainer_Curr.HP <= 0:
+                                    print(f"Your {self.Trainer_Curr.name} has fainted.")
+                                    self.Trainer_Curr.life = "Dead"
+                                    dead = self.Trainer_Curr
+                                    self.Player.Dead_Pokemons.append(dead)
+                                    check = self.check_match()
+                                    if check:
+                                        return True
+                                    else:
+                                        self.Switch_Pokemons(self.Player)
+                        else:
+                            self.Player_Curr.HP -= damage
+                            self.Player_Curr.HP = round(self.Player_Curr.HP, 2)
+                            print(f"It caused {damage} damage on {self.Player_Curr.name.capitalize()}")
+                            print(f"{self.Player_Curr.name.capitalize()} has {self.Player_Curr.HP} HP remaining")
+                            if cri:
+                                print("It's a Critical Hit!!")
+                            # print(damage[choice])
+                            if self.Trainer_Curr.moveset[power[choice]]["Life_drain"]:
+                                print(f"It healed {self.Trainer_Curr.name} for {damage/2}")
+                            self.Trainer_Curr.HP += (damage/2)
+                            if self.Trainer_Curr.HP > self.Trainer_Curr.Stats["hp"]:
+                                self.Trainer_Curr.HP = self.Trainer_Curr.Stats["hp"]
+                            if self.Player_Curr.HP <= 0:
+                                print(f"Your {self.Player_Curr.name} has fainted.")
+                                self.Player_Curr.life = "Dead"
+                                dead = self.Player_Curr
+                                self.Player.Dead_Pokemons.append(dead)
+                                check = self.check_match()
+                                if check:
+                                    return True
+                                else:
+                                    self.Switch_Pokemons(self.Player)
                     else:
-                        print(f"{self.Player_Curr.name} is immune to {damage[choice]}")
+                        print(f"{self.Player_Curr.name} is immune to {power[choice]}")
                 else:
                     print("No damaging Moves, lol betacuck")
                 
