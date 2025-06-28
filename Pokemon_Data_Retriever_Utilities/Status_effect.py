@@ -17,3 +17,8 @@ def Status_effect(effect, Pokemon = None):
     elif effect == "sleep":
         print("Bro fell asleep at the job")
         return "Sleep"
+
+    elif effect == "confusion":
+        print("Thoda jaa eeeeeeeee")
+        print("Taareeee zameeeen parrrrr")
+        return "Confused"
