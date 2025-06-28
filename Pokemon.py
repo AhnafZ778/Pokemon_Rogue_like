@@ -6,7 +6,7 @@ from Move_lister_async import move_retreiver
 from Pokemon_data.Ability_lister import ability_list
 from Pokemon_data.Stats_lister import stat_lister
 from Pokemon_data.Type_lister import type_lister
-from exp import Growth_rate
+from Pokemon_Data_Retriever_Utilities.exp import Growth_rate
 class Pokemon:
     
     def __init__(self, Name, level = 5):
