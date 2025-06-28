@@ -49,3 +49,24 @@ def Status_condition_effect(Pokemon):
             print("Congrats you're no longer useless")
             Pokemon.Status_condition = None
             return False
+
+    elif Pokemon.Status_condition == "Confused":
+        global Confusion_count
+        print(f"Your {Pokemon.name} is confused")
+        dice = random.randint(1, 2)
+        if dice == 1:
+            Pokemon.confused = "Yes"
+        else:
+            Pokemon.confused = "No"
+        Confusion_count += 1
+        if Pokemon.confused == "No":
+            if 4 - Confusion_count == 1:
+                print(f"{Pokemon.name} broke out of confusion")
+                Confusion_count = 0
+                Pokemon.Status_condition = None
+            else:
+                dice = random.randint(1, (5 - Confusion_count))
+                if dice == 1:
+                    print(f"{Pokemon.name} broke out of confusion")
+                    Confusion_count = 0
+                    Pokemon.Status_condition = None
