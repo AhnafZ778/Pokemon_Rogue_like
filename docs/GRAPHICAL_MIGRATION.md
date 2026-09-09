@@ -32,6 +32,9 @@ layer over the existing engine.
 - Trainer name and starter selection are graphical.
 - PokéAPI front/back sprites become transparent, colored ASCII glyph grids.
 - Battle commands support mouse and number-key input.
+- Declared actions resolve by switch/item category, move priority, and Speed.
+- Attacks use synchronized lunges, projectiles, impact shake, and HP updates.
+- Encounter tiers protect early runs from evolved powerhouses and legendaries.
 - Health, status, combat events, loading, errors, victory, and defeat are shown.
 - The original terminal interface remains available with `--terminal`.
 
@@ -70,7 +73,7 @@ modifier that only adds variance or numerical power does not belong.
 
 ### Phase 5: presentation and release
 
-- Add compact impact animations, screen shake, particles, and battle transitions.
+- Expand the compact impact animations with particles and battle transitions.
 - Use Pygame's audio mixer for restrained UI sounds, cries, and music controls.
 - Add settings for volume, text speed, color accessibility, and reduced motion.
 - Package desktop builds for the prioritized operating systems.

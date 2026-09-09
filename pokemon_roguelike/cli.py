@@ -8,7 +8,7 @@ import random
 from collections.abc import Sequence
 
 from .api import PokeAPIClient, PokeAPIError
-from .battle import Battle, BattleEvent, Side
+from .battle import Battle, BattleAction, BattleEvent, Side
 from .factories import create_player, create_random_trainer
 from .models import Move, Pokemon, StatusCondition
 
@@ -82,14 +82,10 @@ async def play(seed: int | None = None) -> Side:
             break
 
         _print_battle_state(battle)
-        _print_events(_take_player_turn(battle))
-
-        if battle.winner is not None:
-            break
-
-        opponent_knocked_out = battle.active_pokemon(Side.OPPONENT).is_fainted
-        if not opponent_knocked_out:
-            _print_events(_take_trainer_turn(battle))
+        player_action = _choose_player_action(battle)
+        trainer_action = _choose_trainer_action(battle)
+        for side, action in battle.order_actions(player_action, trainer_action):
+            _print_events(battle.execute_action(side, action))
 
         if battle.winner is not None:
             break
@@ -113,7 +109,7 @@ def _choose_starter() -> str:
     return STARTERS[_prompt_index("Starter: ", len(STARTERS))]
 
 
-def _take_player_turn(battle: Battle) -> tuple[BattleEvent, ...]:
+def _choose_player_action(battle: Battle) -> BattleAction:
     while True:
         actions = ["attack"]
         current_index = battle.player_active_index
@@ -129,28 +125,28 @@ def _take_player_turn(battle: Battle) -> tuple[BattleEvent, ...]:
 
         try:
             if action == "attack":
-                return battle.attack(Side.PLAYER, _choose_move(battle))
+                return BattleAction.move(_choose_move(battle))
             if action == "switch":
-                return (battle.switch(Side.PLAYER, _choose_switch(battle)),)
-            return (battle.use_item(Side.PLAYER, *_choose_item(battle)),)
+                return BattleAction.switch(_choose_switch(battle))
+            item, party_index = _choose_item(battle)
+            return BattleAction.item(item, party_index)
         except ValueError as error:
             print(f"That action cannot be used: {error}")
 
 
-def _take_trainer_turn(battle: Battle) -> tuple[BattleEvent, ...]:
+def _choose_trainer_action(battle: Battle) -> BattleAction:
     trainer = battle.opponent
     pokemon = battle.active_pokemon(Side.OPPONENT)
 
     cure = STATUS_CURE_ITEMS.get(pokemon.status)
     if cure and trainer.inventory.count(cure) > 0:
-        return (battle.use_item(Side.OPPONENT, cure),)
+        return BattleAction.item(cure)
 
     low_health = pokemon.hp <= pokemon.max_hp * 0.2
     if low_health and trainer.inventory.count("potion") > 0:
-        return (battle.use_item(Side.OPPONENT, "potion"),)
+        return BattleAction.item("potion")
 
-    move_name = battle.choose_trainer_move()
-    return battle.attack(Side.OPPONENT, move_name)
+    return BattleAction.move(battle.choose_trainer_move())
 
 
 def _choose_move(battle: Battle) -> str:

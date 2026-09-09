@@ -1,10 +1,12 @@
-"""Core domain objects for the terminal Pokémon roguelike."""
+"""Core domain objects for the Pokémon roguelike."""
 
-from .battle import Battle, BattleEvent, Side
+from .battle import ActionKind, Battle, BattleAction, BattleEvent, Side
 from .models import Combatant, Inventory, Move, Player, Pokemon, StatusCondition, Trainer
 
 __all__ = [
+    "ActionKind",
     "Battle",
+    "BattleAction",
     "BattleEvent",
     "Combatant",
     "Inventory",

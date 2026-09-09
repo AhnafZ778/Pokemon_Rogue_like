@@ -12,6 +12,18 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 
 
+def calculate_battle_stats(base_stats: Mapping[str, int], level: int) -> dict[str, int]:
+    """Calculate neutral battle stats using the familiar Pokémon formulas."""
+
+    calculated = {
+        stat: ((2 * value + 31) * level) // 100 + 5
+        for stat, value in base_stats.items()
+        if stat != "hp"
+    }
+    calculated["hp"] = ((2 * base_stats["hp"] + 31) * level) // 100 + level + 10
+    return calculated
+
+
 class StatusCondition(StrEnum):
     """Status conditions currently supported by the battle engine."""
 
@@ -75,6 +87,7 @@ class Pokemon:
     stats: dict[str, int]
     types: tuple[str, ...]
     moves: dict[str, Move]
+    base_stats: dict[str, int] = field(default_factory=dict)
     learnset: dict[int, tuple[Move, ...]] = field(default_factory=dict)
     growth_curve: dict[int, int] = field(default_factory=dict)
     ability: str | None = None
@@ -146,6 +159,8 @@ class Pokemon:
             raise ValueError("Experience gained cannot be negative")
 
         self.experience += amount
+        starting_level = self.level
+        starting_max_hp = self.max_hp
         unlocked: list[Move] = []
         while self.level < 100:
             next_level = self.level + 1
@@ -154,6 +169,10 @@ class Pokemon:
                 break
             self.level = next_level
             unlocked.extend(self.learnset.get(next_level, ()))
+        if self.base_stats and self.level != starting_level:
+            previous_hp = self.hp
+            self.stats = calculate_battle_stats(self.base_stats, self.level)
+            self.hp = previous_hp + self.max_hp - starting_max_hp
         return tuple(unlocked)
 
     def learn_move(self, move: Move, replace: str | None = None) -> None:

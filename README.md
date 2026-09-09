@@ -47,7 +47,9 @@ python3 main.py
 ```
 
 The starter screen and battle now open in a graphical window. Mouse clicks and
-number keys can both select commands.
+number keys can both select commands. Moves resolve by priority and Speed with
+short type-coloured attack animations, and opening opponents come from a
+level-gated beginner pool rather than the entire Pokédex.
 
 The package and installed-command forms are also available:
 

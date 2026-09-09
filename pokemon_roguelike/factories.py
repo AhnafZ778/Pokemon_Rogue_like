@@ -6,6 +6,7 @@ import asyncio
 import random
 
 from .api import PokeAPIClient
+from .encounter_tiers import choose_opponent_names, trainer_party_size
 from .models import Inventory, Player, Pokemon, Trainer
 
 PLAYER_ITEMS = {
@@ -65,12 +66,13 @@ async def create_random_trainer(
     if max_party_size < 1:
         raise ValueError("Trainer party size must be at least one")
 
-    pokemon_names = await client.list_pokemon_names()
-    party_size = rng.randint(1, min(max_party_size, len(pokemon_names)))
-    selected_names = rng.sample(pokemon_names, party_size)
+    party_size = trainer_party_size(level, max_party_size)
+    selected_names = choose_opponent_names(level, party_size, rng)
     party = list(
         await asyncio.gather(
             *(client.get_pokemon(name, level=level) for name in selected_names)
         )
     )
-    return create_trainer(rng.choice(TRAINER_NAMES), party)
+    trainer = create_trainer(rng.choice(TRAINER_NAMES), party)
+    trainer.inventory.quantities["potion"] = min(3, level // 20)
+    return trainer

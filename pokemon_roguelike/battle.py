@@ -20,6 +20,33 @@ class Side(StrEnum):
         return Side.OPPONENT if self is Side.PLAYER else Side.PLAYER
 
 
+class ActionKind(StrEnum):
+    MOVE = "move"
+    ITEM = "item"
+    SWITCH = "switch"
+
+
+@dataclass(frozen=True, slots=True)
+class BattleAction:
+    """A choice made before a round is resolved."""
+
+    kind: ActionKind
+    value: str | None = None
+    party_index: int | None = None
+
+    @classmethod
+    def move(cls, move_name: str) -> BattleAction:
+        return cls(ActionKind.MOVE, value=move_name)
+
+    @classmethod
+    def item(cls, item_name: str, party_index: int | None = None) -> BattleAction:
+        return cls(ActionKind.ITEM, value=item_name, party_index=party_index)
+
+    @classmethod
+    def switch(cls, party_index: int) -> BattleAction:
+        return cls(ActionKind.SWITCH, party_index=party_index)
+
+
 @dataclass(frozen=True, slots=True)
 class BattleEvent:
     """A presentation-neutral description of something that happened."""
@@ -143,14 +170,100 @@ class Battle:
         self._append_faint_event(events, attacker)
         return tuple(events)
 
+    def order_actions(
+        self,
+        player_action: BattleAction,
+        opponent_action: BattleAction,
+    ) -> tuple[tuple[Side, BattleAction], ...]:
+        """Order declared actions by category, move priority, and Speed."""
+
+        actions = [
+            (Side.PLAYER, player_action),
+            (Side.OPPONENT, opponent_action),
+        ]
+        self.rng.shuffle(actions)
+        actions.sort(
+            key=lambda choice: (
+                self._action_priority(*choice),
+                self._action_speed(choice[0]),
+            ),
+            reverse=True,
+        )
+        return tuple(actions)
+
+    def execute_action(
+        self,
+        side: Side,
+        action: BattleAction,
+    ) -> tuple[BattleEvent, ...]:
+        """Execute one declared action if its user can still act."""
+
+        if self.winner is not None:
+            return ()
+        if action.kind is not ActionKind.SWITCH and self.active_pokemon(side).is_fainted:
+            return ()
+        if action.kind is ActionKind.MOVE:
+            if action.value is None:
+                raise ValueError("A move action requires a move name")
+            return self.attack(side, action.value)
+        if action.kind is ActionKind.ITEM:
+            if action.value is None:
+                raise ValueError("An item action requires an item name")
+            return (self.use_item(side, action.value, action.party_index),)
+        if action.party_index is None:
+            raise ValueError("A switch action requires a party position")
+        return (self.switch(side, action.party_index),)
+
     def choose_trainer_move(self) -> str:
         """Choose a usable move without duplicating the attack implementation."""
 
         pokemon = self.active_pokemon(Side.OPPONENT)
-        usable_moves = [move.name for move in pokemon.moves.values() if move.current_pp > 0]
+        defender = self.active_pokemon(Side.PLAYER)
+        usable_moves = [
+            move
+            for move in pokemon.moves.values()
+            if move.current_pp > 0
+            and (move.is_damaging or move.ailment is not None or move.stat_changes)
+        ]
+        if not usable_moves:
+            usable_moves = [
+                move for move in pokemon.moves.values() if move.current_pp > 0
+            ]
         if not usable_moves:
             raise ValueError(f"{pokemon.display_name} has no usable moves")
-        return self.rng.choice(usable_moves)
+        if self.rng.random() < 0.15:
+            return self.rng.choice(usable_moves).name
+
+        def score(move: Move) -> float:
+            if move.is_damaging:
+                accuracy = (move.accuracy or 100) / 100
+                return move.power * effectiveness(move.move_type, defender.types) * accuracy
+            if move.ailment is not None and defender.status is None:
+                return 35
+            return 20 + sum(abs(change) for change in move.stat_changes.values()) * 5
+
+        best_score = max(score(move) for move in usable_moves)
+        best_moves = [move.name for move in usable_moves if score(move) == best_score]
+        return self.rng.choice(best_moves)
+
+    def _action_priority(self, side: Side, action: BattleAction) -> int:
+        if action.kind is ActionKind.SWITCH:
+            return 6
+        if action.kind is ActionKind.ITEM:
+            return 5
+        if action.value is None:
+            raise ValueError("A move action requires a move name")
+        move = self.active_pokemon(side).moves.get(action.value)
+        if move is None:
+            raise ValueError(f"The active Pokémon does not know {action.value}")
+        return move.priority
+
+    def _action_speed(self, side: Side) -> float:
+        pokemon = self.active_pokemon(side)
+        speed = pokemon.effective_stat("speed")
+        if pokemon.status is StatusCondition.PARALYZED:
+            speed *= 0.5
+        return speed
 
     def apply_end_of_turn_effects(self, side: Side) -> tuple[BattleEvent, ...]:
         pokemon = self.active_pokemon(side)

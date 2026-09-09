@@ -18,12 +18,14 @@ import pygame
 
 from .api import PokeAPIClient
 from .ascii_art import AsciiSprite
-from .battle import Battle, BattleEvent, Side
+from .battle import ActionKind, Battle, BattleAction, BattleEvent, Side
 from .factories import create_player, create_random_trainer
 from .models import Move, Pokemon, StatusCondition
 
 WINDOW_SIZE = (1280, 720)
 FPS = 60
+MOVE_ANIMATION_MS = 680
+UTILITY_ANIMATION_MS = 380
 STARTERS = ("bulbasaur", "charmander", "squirtle")
 
 BACKGROUND = (7, 12, 18)
@@ -36,6 +38,27 @@ AMBER = (255, 205, 92)
 RED = (255, 94, 105)
 MUTED = (108, 139, 145)
 TEXT = (220, 244, 235)
+
+TYPE_COLORS = {
+    "normal": TEXT,
+    "fire": (255, 112, 70),
+    "water": (70, 174, 255),
+    "electric": (255, 220, 65),
+    "grass": (94, 230, 112),
+    "ice": (125, 235, 255),
+    "fighting": (255, 105, 77),
+    "poison": (205, 108, 255),
+    "ground": (217, 169, 90),
+    "flying": (137, 176, 255),
+    "psychic": (255, 103, 170),
+    "bug": (177, 224, 72),
+    "rock": (195, 170, 100),
+    "ghost": (152, 121, 220),
+    "dragon": (123, 103, 255),
+    "dark": (145, 121, 112),
+    "steel": (173, 190, 205),
+    "fairy": (255, 150, 213),
+}
 
 STATUS_CURE_ITEMS = {
     StatusCondition.POISONED: "antidote",
@@ -123,6 +146,11 @@ class GraphicalGame:
         self.action_flash_until = 0
         self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="poke-load")
         self.loading_future: Future[LoadedBattle] | None = None
+        self.pending_actions: deque[tuple[Side, BattleAction]] = deque()
+        self.active_action: tuple[Side, BattleAction] | None = None
+        self.action_started_at = 0
+        self.action_applied = False
+        self.round_needs_cleanup = False
         self.scanline_overlay = self._make_scanline_overlay()
 
     def run(self) -> None:
@@ -181,6 +209,8 @@ class GraphicalGame:
                 self._begin_loading()
 
     def _handle_battle_event(self, event: pygame.event.Event) -> None:
+        if self.active_action is not None or self.pending_actions:
+            return
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_BACKSPACE:
                 self.menu = "root"
@@ -195,6 +225,8 @@ class GraphicalGame:
                     break
 
     def _update(self) -> None:
+        if self.screen is Screen.BATTLE:
+            self._update_action_sequence()
         if self.screen is not Screen.LOADING or self.loading_future is None:
             return
         if not self.loading_future.done():
@@ -338,6 +370,7 @@ class GraphicalGame:
 
         self._draw_active_sprite(Side.OPPONENT, pygame.Rect(735, 62, 500, 275))
         self._draw_active_sprite(Side.PLAYER, pygame.Rect(45, 185, 520, 285))
+        self._draw_attack_effect()
 
         log_rect = pygame.Rect(35, 490, 770, 195)
         self._draw_panel(log_rect, border)
@@ -348,9 +381,22 @@ class GraphicalGame:
 
         action_rect = pygame.Rect(825, 490, 420, 195)
         self._draw_panel(action_rect, CYAN)
-        title = "COMMAND" if self.menu == "root" else self.menu.upper()
+        animating = self.active_action is not None or bool(self.pending_actions)
+        if animating:
+            title = "EXECUTING"
+        else:
+            title = "COMMAND" if self.menu == "root" else self.menu.upper()
         _text(self.surface, self.small_font, f"// {title}", (845, 506), CYAN)
-        self.buttons = self._battle_buttons()
+        self.buttons = [] if animating else self._battle_buttons()
+        if animating:
+            _text(
+                self.surface,
+                self.font,
+                "[ ROUND IN PROGRESS ]",
+                (1035, 575),
+                AMBER,
+                center=True,
+            )
         mouse_position = pygame.mouse.get_pos()
         for index, button in enumerate(self.buttons, start=1):
             hovered = button.rect.collidepoint(mouse_position)
@@ -416,43 +462,97 @@ class GraphicalGame:
             self.menu = "root"
             return
 
-        forced_switch = False
         try:
             if button.value.startswith("move:"):
-                move_name = button.value.removeprefix("move:")
-                events = self.battle.attack(Side.PLAYER, move_name)
+                action = BattleAction.move(button.value.removeprefix("move:"))
             elif button.value.startswith("item:"):
-                item = button.value.removeprefix("item:")
-                events = (self.battle.use_item(Side.PLAYER, item),)
+                action = BattleAction.item(button.value.removeprefix("item:"))
             elif button.value.startswith("switch:"):
-                forced_switch = self.battle.active_pokemon(Side.PLAYER).is_fainted
                 party_index = int(button.value.removeprefix("switch:"))
-                events = (self.battle.switch(Side.PLAYER, party_index),)
+                action = BattleAction.switch(party_index)
             else:
                 return
         except ValueError as error:
             self.messages.append(f"> INVALID COMMAND: {str(error).upper()}")
             return
 
-        self._record_events(events)
-        self.action_flash_until = pygame.time.get_ticks() + 160
         self.menu = "root"
-        if forced_switch:
+        if (
+            action.kind is ActionKind.SWITCH
+            and self.battle.active_pokemon(Side.PLAYER).is_fainted
+        ):
+            self._record_events(self.battle.execute_action(Side.PLAYER, action))
             return
-        self._complete_round()
+        self._begin_round(action)
 
-    def _complete_round(self) -> None:
+    def _begin_round(self, player_action: BattleAction) -> None:
+        assert self.battle is not None
+        try:
+            ordered = self.battle.order_actions(
+                player_action,
+                self._choose_trainer_action(),
+            )
+        except ValueError as error:
+            self.messages.append(f"> INVALID COMMAND: {str(error).upper()}")
+            return
+        self.pending_actions.extend(ordered)
+        self.round_needs_cleanup = True
+        self._start_next_action()
+
+    def _choose_trainer_action(self) -> BattleAction:
         assert self.battle is not None
         battle = self.battle
-        if battle.winner is not None:
-            self.screen = Screen.FINISHED
-            return
+        trainer = battle.opponent
+        pokemon = battle.active_pokemon(Side.OPPONENT)
+        cure = STATUS_CURE_ITEMS.get(pokemon.status)
+        if cure and trainer.inventory.count(cure) > 0:
+            return BattleAction.item(cure)
+        if pokemon.hp <= pokemon.max_hp * 0.2 and trainer.inventory.count("potion") > 0:
+            return BattleAction.item("potion")
+        return BattleAction.move(battle.choose_trainer_move())
 
-        opponent_fainted = battle.active_pokemon(Side.OPPONENT).is_fainted
-        if opponent_fainted:
-            self._replace_opponent()
-        else:
-            self._record_events(self._trainer_turn())
+    def _start_next_action(self) -> None:
+        assert self.battle is not None
+        while self.pending_actions:
+            side, action = self.pending_actions.popleft()
+            cannot_act = (
+                action.kind is not ActionKind.SWITCH
+                and self.battle.active_pokemon(side).is_fainted
+            )
+            if self.battle.winner is not None or cannot_act:
+                continue
+            self.active_action = (side, action)
+            self.action_started_at = pygame.time.get_ticks()
+            self.action_applied = False
+            return
+        if self.round_needs_cleanup:
+            self._finish_round()
+
+    def _update_action_sequence(self) -> None:
+        if self.active_action is None:
+            return
+        side, action = self.active_action
+        duration = (
+            MOVE_ANIMATION_MS if action.kind is ActionKind.MOVE else UTILITY_ANIMATION_MS
+        )
+        elapsed = pygame.time.get_ticks() - self.action_started_at
+        impact_time = duration * (0.42 if action.kind is ActionKind.MOVE else 0.18)
+        if not self.action_applied and elapsed >= impact_time:
+            assert self.battle is not None
+            try:
+                self._record_events(self.battle.execute_action(side, action))
+            except ValueError as error:
+                self.messages.append(f"> ACTION FAILED: {str(error).upper()}")
+            self.action_applied = True
+            self.action_flash_until = pygame.time.get_ticks() + 150
+        if elapsed >= duration:
+            self.active_action = None
+            self._start_next_action()
+
+    def _finish_round(self) -> None:
+        assert self.battle is not None
+        battle = self.battle
+        self.round_needs_cleanup = False
 
         if battle.winner is None:
             for side in (Side.PLAYER, Side.OPPONENT):
@@ -467,18 +567,6 @@ class GraphicalGame:
             choices = battle.player.healthy_party_indices()
             if choices:
                 self.menu = "switch"
-
-    def _trainer_turn(self) -> tuple[BattleEvent, ...]:
-        assert self.battle is not None
-        battle = self.battle
-        trainer = battle.opponent
-        pokemon = battle.active_pokemon(Side.OPPONENT)
-        cure = STATUS_CURE_ITEMS.get(pokemon.status)
-        if cure and trainer.inventory.count(cure) > 0:
-            return (battle.use_item(Side.OPPONENT, cure),)
-        if pokemon.hp <= pokemon.max_hp * 0.2 and trainer.inventory.count("potion") > 0:
-            return (battle.use_item(Side.OPPONENT, "potion"),)
-        return battle.attack(Side.OPPONENT, battle.choose_trainer_move())
 
     def _replace_opponent(self) -> None:
         assert self.battle is not None
@@ -566,9 +654,70 @@ class GraphicalGame:
                 sprite,
                 (round(sprite.get_width() * scale), round(sprite.get_height() * scale)),
             )
+
+        offset_x = 0
+        offset_y = 0
+        progress = self._animation_progress()
+        if progress is not None and self.active_action is not None:
+            acting_side, action = self.active_action
+            if action.kind is ActionKind.MOVE and side is acting_side:
+                lunge = math.sin(min(progress / 0.70, 1) * math.pi)
+                direction = 1 if side is Side.PLAYER else -1
+                offset_x = round(direction * 42 * lunge)
+                offset_y = -round(10 * lunge)
+            elif (
+                action.kind is ActionKind.MOVE
+                and side is acting_side.other
+                and 0.40 <= progress <= 0.72
+            ):
+                impact = 1 - abs(progress - 0.56) / 0.16
+                offset_x = round(math.sin(progress * 150) * 10 * impact)
         bob = round(math.sin(pygame.time.get_ticks() / 420 + index) * 3)
-        sprite_rect = sprite.get_rect(midbottom=(bounds.centerx, bounds.bottom - 3 + bob))
+        sprite_rect = sprite.get_rect(
+            midbottom=(
+                bounds.centerx + offset_x,
+                bounds.bottom - 3 + bob + offset_y,
+            )
+        )
         self.surface.blit(sprite, sprite_rect)
+
+    def _draw_attack_effect(self) -> None:
+        progress = self._animation_progress()
+        if progress is None or self.active_action is None:
+            return
+        side, action = self.active_action
+        if action.kind is not ActionKind.MOVE or not 0.18 <= progress <= 0.72:
+            return
+        assert self.battle is not None
+        move = self.battle.active_pokemon(side).moves.get(action.value or "")
+        color = TYPE_COLORS.get(move.move_type if move else "normal", TEXT)
+        start = pygame.Vector2(485, 310) if side is Side.PLAYER else pygame.Vector2(850, 210)
+        end = pygame.Vector2(850, 210) if side is Side.PLAYER else pygame.Vector2(485, 310)
+        travel = (progress - 0.18) / 0.54
+        position = start.lerp(end, min(1, travel))
+        trail_start = start.lerp(end, max(0, travel - 0.16))
+        pygame.draw.line(self.surface, color, trail_start, position, 3)
+        pygame.draw.circle(self.surface, color, position, 11, 2)
+        pygame.draw.circle(self.surface, TEXT, position, 4)
+        _text(
+            self.surface,
+            self.small_font,
+            "*",
+            (round(position.x), round(position.y)),
+            color,
+            center=True,
+        )
+
+    def _animation_progress(self) -> float | None:
+        if self.active_action is None:
+            return None
+        duration = (
+            MOVE_ANIMATION_MS
+            if self.active_action[1].kind is ActionKind.MOVE
+            else UTILITY_ANIMATION_MS
+        )
+        elapsed = pygame.time.get_ticks() - self.action_started_at
+        return min(1, elapsed / duration)
 
     def _draw_status_panel(
         self,
@@ -669,6 +818,10 @@ class GraphicalGame:
         self.messages.clear()
         self.loading_future = None
         self.error_message = ""
+        self.pending_actions.clear()
+        self.active_action = None
+        self.action_applied = False
+        self.round_needs_cleanup = False
 
 
 def _load_battle(player_name: str, starter_name: str, seed: int | None) -> LoadedBattle:

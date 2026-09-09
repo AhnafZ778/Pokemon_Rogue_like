@@ -9,7 +9,7 @@ from typing import Any, Self
 
 import aiohttp
 
-from .models import Move, Pokemon, StatusCondition, moves_by_name
+from .models import Move, Pokemon, StatusCondition, calculate_battle_stats, moves_by_name
 
 JsonObject = dict[str, Any]
 
@@ -78,7 +78,7 @@ class PokeAPIClient:
             entry["level"]: entry["experience"]
             for entry in growth_data["levels"]
         }
-        stats = {
+        base_stats = {
             entry["stat"]["name"]: entry["base_stat"]
             for entry in pokemon_data["stats"]
         }
@@ -94,9 +94,10 @@ class PokeAPIClient:
             name=pokemon_data["name"],
             level=level,
             base_experience=pokemon_data.get("base_experience") or 0,
-            stats=stats,
+            stats=calculate_battle_stats(base_stats, level),
             types=types,
             moves=starting_moves,
+            base_stats=base_stats,
             learnset=learnset,
             growth_curve=growth_curve,
             ability=ability,
