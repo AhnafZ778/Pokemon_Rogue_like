@@ -1,11 +1,11 @@
 # Pokémon Roguelike
 
-A terminal-focused Pokémon roguelike powered by live data from
-[PokéAPI](https://pokeapi.co/).
+A graphical Pokémon roguelike with a terminal-inspired interface, powered by
+live data from [PokéAPI](https://pokeapi.co/).
 
 This project began as a fourth-semester API and Python learning project. It is
-now being modernized into a clean, reusable game engine before the full run
-structure and terminal interface are completed.
+now being modernized into a focused, replayable game while preserving the
+direct, handmade character of the original terminal experience.
 
 ## Current architecture
 
@@ -13,10 +13,10 @@ structure and terminal interface are completed.
 PokéAPI ──► api.py ──► models.py ◄── factories.py
                 │          │
                 ▼          ▼
-          encounters.py    battle.py
-                           │      │
-                           ▼      ▼
-                     effects.py  type_chart.py
+          encounters.py    battle.py ──► gui.py ──► ascii_art.py
+                           │
+                           ├──► effects.py
+                           └──► type_chart.py
 ```
 
 - `models.py` contains game state and has no network or terminal dependencies.
@@ -25,6 +25,8 @@ PokéAPI ──► api.py ──► models.py ◄── factories.py
 - `effects.py` contains item and status-condition behavior.
 - `encounters.py` selects valid wild encounters from location data.
 - `factories.py` creates players and randomized trainers with consistent defaults.
+- `ascii_art.py` converts transparent PokéAPI sprites into colored glyph grids.
+- `gui.py` presents the game through a Pygame-powered terminal-style window.
 
 ## Setup
 
@@ -44,6 +46,9 @@ Run the root launcher:
 python3 main.py
 ```
 
+The starter screen and battle now open in a graphical window. Mouse clicks and
+number keys can both select commands.
+
 The package and installed-command forms are also available:
 
 ```bash
@@ -52,6 +57,10 @@ pokemon-roguelike
 ```
 
 Pass `--seed 42` to any launcher for a reproducible opponent and battle.
+Use `python3 main.py --terminal` to play through the original plain terminal UI.
+
+The phased interface and gameplay roadmap is documented in
+[`docs/GRAPHICAL_MIGRATION.md`](docs/GRAPHICAL_MIGRATION.md).
 
 ## Loading a Pokémon
 
@@ -70,9 +79,9 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-The launcher currently plays one complete trainer battle. Run progression,
-rewards, capture flow, and additional encounter types are the next product-level
-features.
+The graphical launcher currently plays one complete trainer battle. Run
+progression, rewards, capture flow, and additional encounter types are the next
+product-level features.
 
 ## Project history
 

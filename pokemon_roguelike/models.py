@@ -78,6 +78,8 @@ class Pokemon:
     learnset: dict[int, tuple[Move, ...]] = field(default_factory=dict)
     growth_curve: dict[int, int] = field(default_factory=dict)
     ability: str | None = None
+    front_sprite_url: str | None = None
+    back_sprite_url: str | None = None
     experience: int = 0
     status: StatusCondition | None = None
     status_turns: int = 0

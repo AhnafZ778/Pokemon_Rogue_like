@@ -88,6 +88,7 @@ class PokeAPIClient:
         )
         abilities = pokemon_data.get("abilities", [])
         ability = abilities[0]["ability"]["name"] if abilities else None
+        sprites = pokemon_data.get("sprites") or {}
 
         return Pokemon(
             name=pokemon_data["name"],
@@ -99,6 +100,8 @@ class PokeAPIClient:
             learnset=learnset,
             growth_curve=growth_curve,
             ability=ability,
+            front_sprite_url=sprites.get("front_default"),
+            back_sprite_url=sprites.get("back_default"),
             experience=growth_curve.get(level, 0),
         )
 
@@ -112,6 +115,19 @@ class PokeAPIClient:
     async def list_pokemon_names(self, limit: int = 1025) -> tuple[str, ...]:
         data = await self._get_json(f"pokemon?limit={limit}")
         return tuple(entry["name"] for entry in data["results"])
+
+    async def get_bytes(self, resource: str) -> bytes:
+        """Fetch a binary resource, such as a sprite image."""
+
+        if self._session is None:
+            raise RuntimeError("PokeAPIClient must be used as an async context manager")
+
+        try:
+            async with self._semaphore, self._session.get(resource) as response:
+                response.raise_for_status()
+                return await response.read()
+        except (aiohttp.ClientError, asyncio.TimeoutError) as error:
+            raise PokeAPIError(f"Could not retrieve {resource}: {error}") from error
 
     async def _get_json(self, resource: str) -> JsonObject:
         if self._session is None:

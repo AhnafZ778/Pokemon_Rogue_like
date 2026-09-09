@@ -10,10 +10,13 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "aiohttp>=3.9,<4",
+    "Pillow>=10,<13",
+    "pygame-ce>=2.5,<3",
 ]
 
 [project.scripts]
-pokemon-roguelike = "pokemon_roguelike.cli:run"
+pokemon-roguelike = "pokemon_roguelike.gui:run"
+pokemon-roguelike-terminal = "pokemon_roguelike.cli:run"
 
 [tool.setuptools.packages.find]
 include = ["pokemon_roguelike*"]

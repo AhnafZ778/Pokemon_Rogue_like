@@ -1,6 +1,6 @@
 """Root launcher for the Pokémon roguelike."""
 
-from pokemon_roguelike.cli import run
+from pokemon_roguelike.gui import run
 
 
 if __name__ == "__main__":
