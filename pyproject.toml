@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pokemon-roguelike"
+version = "0.1.0"
+description = "A terminal Pokémon roguelike powered by PokéAPI"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "aiohttp>=3.9,<4",
+]
+
+[project.scripts]
+pokemon-roguelike = "pokemon_roguelike.cli:run"
+
+[tool.setuptools.packages.find]
+include = ["pokemon_roguelike*"]
